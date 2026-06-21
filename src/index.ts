@@ -33,3 +33,11 @@ export {
 } from './capabilities/capabilities';
 export type { AgentCapability, CapabilitiesManifest } from './capabilities/capabilities';
 export { validateCapabilities } from './capabilities/validateCapabilities';
+
+// Turn topology + the cohesive turn-owner (P3, audit S-08): the single source of
+// truth for pipeline routing + envelope-boundary validation. The dispatcher routes
+// via turnOwner.resolveNext; a drift-guard test binds AgentGraph's edges to it.
+export { TURN_TOPOLOGY, resolveNext } from './turn/topology';
+export type { TurnNode, TurnState, NextResolution } from './turn/topology';
+export { TurnOwner, turnOwner } from './turn/TurnOwner';
+export type { EnvelopeValidation, TurnDecision, TurnContext } from './turn/TurnOwner';
