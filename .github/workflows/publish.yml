@@ -1,0 +1,49 @@
+# Publishes @opsflow/orchestrator to GitHub Packages on a GitHub Release.
+# Builds its @opsflow/contracts + @opsflow/platform deps (live source) first.
+name: Publish
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: opsflow-orchestrator
+      - name: Checkout @opsflow/contracts
+        uses: actions/checkout@v4
+        with:
+          repository: OgunrekunAyoola/opsflow-contracts
+          path: opsflow-contracts
+          token: ${{ secrets.CI_REPO_TOKEN }}
+      - name: Checkout @opsflow/platform
+        uses: actions/checkout@v4
+        with:
+          repository: OgunrekunAyoola/opsflow-platform
+          path: opsflow-platform
+          token: ${{ secrets.CI_REPO_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://npm.pkg.github.com
+          scope: '@opsflow'
+      - name: Build deps
+        run: |
+          (cd opsflow-contracts && npm ci && npm run build)
+          (cd opsflow-platform && npm ci && npm run build)
+      - name: Build + publish — orchestrator
+        working-directory: opsflow-orchestrator
+        run: |
+          npm ci
+          npm run build
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

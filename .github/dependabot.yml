@@ -1,0 +1,8 @@
+version: 2
+# npm omitted: @opsflow/* file: siblings unresolvable in Dependabot sandbox
+# (resolves with devspace/published). Actions updates kept.
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly

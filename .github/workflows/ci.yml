@@ -1,0 +1,70 @@
+# CI — opsflow-orchestrator. Depends on @opsflow/contracts + @opsflow/platform, so the
+# quality job checks out both siblings (live source via CI_REPO_TOKEN) and builds them
+# in order before installing this repo. CodeQL omitted (needs GHAS on private repos).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Secret scan (gitleaks)
+        if: github.actor != 'dependabot[bot]'
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  quality:
+    name: Quality gates
+    # Dependabot PRs don't receive repo secrets, so the CI_REPO_TOKEN sibling checkout
+    # can't run; the bump is validated by the main-branch CI after merge.
+    if: github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: opsflow-orchestrator
+      - name: Checkout @opsflow/contracts (live source)
+        uses: actions/checkout@v4
+        with:
+          repository: OgunrekunAyoola/opsflow-contracts
+          path: opsflow-contracts
+          token: ${{ secrets.CI_REPO_TOKEN }}
+      - name: Checkout @opsflow/platform (live source)
+        uses: actions/checkout@v4
+        with:
+          repository: OgunrekunAyoola/opsflow-platform
+          path: opsflow-platform
+          token: ${{ secrets.CI_REPO_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Build dependency — @opsflow/contracts
+        working-directory: opsflow-contracts
+        run: npm ci && npm run build
+      - name: Build dependency — @opsflow/platform
+        working-directory: opsflow-platform
+        run: npm ci && npm run build
+      - name: Install + quality gates — orchestrator
+        working-directory: opsflow-orchestrator
+        run: |
+          npm ci
+          npm audit --audit-level=high
+          npm run typecheck
+          npm run lint
+          npm run format:check
+          npm test -- --ci --coverage
+          npm run build

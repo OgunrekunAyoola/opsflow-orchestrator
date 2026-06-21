@@ -1,0 +1,46 @@
+{
+  "name": "@opsflow/orchestrator",
+  "version": "0.1.0",
+  "description": "OpsFlow control plane — capability registry + deployment/canary/shadow governance (AgentVersionRegistry, DeploymentController, ShadowRunner). The cohesive turn-owner (resolve → invoke → validate envelope → route → audit) follows. Depends on @opsflow/platform + @opsflow/contracts.",
+  "license": "UNLICENSED",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "jest --passWithNoTests",
+    "lint": "eslint src --max-warnings=0",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@opsflow/contracts": "file:../opsflow-contracts",
+    "@opsflow/platform": "file:../opsflow-platform"
+  },
+  "peerDependencies": {
+    "mongoose": "^8.6.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.2.3",
+    "@typescript-eslint/eslint-plugin": "^8.8.0",
+    "@typescript-eslint/parser": "^8.8.0",
+    "eslint": "^8.57.0",
+    "jest": "^30.4.2",
+    "mongoose": "^8.6.0",
+    "prettier": "^3.4.2",
+    "ts-jest": "^29.4.10",
+    "typescript": "^5.9.3"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/OgunrekunAyoola/opsflow-orchestrator.git"
+  }
+}
