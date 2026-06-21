@@ -18,7 +18,7 @@ jobs:
     name: Secret scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Secret scan (gitleaks)
@@ -34,17 +34,17 @@ jobs:
     if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: opsflow-orchestrator
       - name: Checkout @opsflow/contracts (live source)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: OgunrekunAyoola/opsflow-contracts
           path: opsflow-contracts
           token: ${{ secrets.CI_REPO_TOKEN }}
       - name: Checkout @opsflow/platform (live source)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: OgunrekunAyoola/opsflow-platform
           path: opsflow-platform

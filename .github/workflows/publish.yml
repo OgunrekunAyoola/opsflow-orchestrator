@@ -15,17 +15,17 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: opsflow-orchestrator
       - name: Checkout @opsflow/contracts
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: OgunrekunAyoola/opsflow-contracts
           path: opsflow-contracts
           token: ${{ secrets.CI_REPO_TOKEN }}
       - name: Checkout @opsflow/platform
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: OgunrekunAyoola/opsflow-platform
           path: opsflow-platform
