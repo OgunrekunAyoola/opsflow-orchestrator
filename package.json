@@ -9,7 +9,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && cp src/capabilities/capabilities.yaml dist/capabilities/capabilities.yaml",
     "typecheck": "tsc --noEmit",
     "test": "jest --passWithNoTests",
     "lint": "eslint src --max-warnings=0",
@@ -19,13 +19,15 @@
   },
   "dependencies": {
     "@opsflow/contracts": "file:../opsflow-contracts",
-    "@opsflow/platform": "file:../opsflow-platform"
+    "@opsflow/platform": "file:../opsflow-platform",
+    "js-yaml": "^4.1.1"
   },
   "peerDependencies": {
     "mongoose": "^8.6.0"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.2.3",
     "@typescript-eslint/eslint-plugin": "^8.8.0",
     "@typescript-eslint/parser": "^8.8.0",

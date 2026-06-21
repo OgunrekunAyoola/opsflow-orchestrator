@@ -1,0 +1,173 @@
+# Agent capability declarations — auditable source of truth (Block 5 Step 2)
+#
+# Each agent declares exactly what it is permitted to access:
+#   secrets     — which SecretsProvider scopes it may read
+#                 Format: "scope:KEY"
+#                   global:KEY            → env var KEY (e.g. ANTHROPIC_API_KEY)
+#                   agent:{Name}:llm:KEY  → env var OPSFLOW_AGENT_{NAME_UPPER}_LLM_{KEY}
+#                                           falls back to plain KEY if absent
+#   tools       — which tools it may invoke (humanOnly tools must never appear here)
+#   repositories — which repositories it may call, with read or write permission
+#   events.emit      — which domain events it may emit
+#   events.subscribe — which domain events it may handle
+#
+# Enforcement: OPSFLOW_ENFORCE_CAPABILITIES=true → startup throws on violations
+#              OPSFLOW_ENFORCE_CAPABILITIES=false (default) → startup logs warnings
+
+agents:
+  TriageAgent:
+    description: "Classifies incoming messages; runs opt-out, distress, and payment signal detection pre-LLM"
+    secrets:
+      - global:ANTHROPIC_API_KEY
+    tools: []
+    repositories:
+      - CustomerConsent:read
+      - CustomerConsent:write
+      - Ticket:read
+      - Thread:read
+    events:
+      emit:
+        - DistressDetected
+        - CustomerOptedOut
+      subscribe: []
+
+  EnrichmentAgent:
+    description: "Fetches customer profile, tier, and prior escalation count to enrich ticket state"
+    secrets:
+      - global:ANTHROPIC_API_KEY
+    tools: []
+    repositories:
+      - Ticket:read
+      - Thread:read
+      - CustomerConsent:read
+    events:
+      emit: []
+      subscribe: []
+
+  ThreadClassifier:
+    description: "Detects follow-ups vs new tickets; auto-resolves on confirmation phrases (ADR-060)"
+    secrets:
+      - global:ANTHROPIC_API_KEY
+    tools: []
+    repositories:
+      - Thread:read
+      - Thread:write
+      - Ticket:read
+    events:
+      emit: []
+      subscribe: []
+
+  KBRetrieval:
+    description: "RAG retrieval — embeds the query via Cohere and runs Atlas vector search; query is PII-masked before egress (ADR-029/N-65). Read-only, no LLM."
+    secrets:
+      - global:COHERE_API_KEY
+    tools:
+      - kb_lookup
+    repositories:
+      - VectorDoc:read
+      - ProductCatalog:read
+    events:
+      emit: []
+      subscribe: []
+
+  TriageRouter:
+    description: "Pure routing node — evaluates state flags, no I/O (ADR-070 invariant 4)"
+    secrets: []
+    tools: []
+    repositories: []
+    events:
+      emit: []
+      subscribe: []
+
+  ResolutionAgent:
+    description: "Multi-turn tool-use loop to resolve ticket; refund_order is humanOnly and excluded (ADR-068)"
+    secrets:
+      - global:ANTHROPIC_API_KEY              # fallback
+      - agent:ResolutionAgent:llm:ANTHROPIC_API_KEY  # optional per-agent key override
+    tools:
+      - kb_lookup
+      - escalate_ticket
+      - check_order_status
+      - reset_password
+      - get_customer_orders
+      - product_lookup
+      - check_inventory
+      - update_delivery_address
+      - add_order_note
+    repositories:
+      - Ticket:read
+      - Thread:read
+      - Order:read
+      - Order:write          # update_delivery_address (pre-dispatch) + add_order_note
+      - ProductCatalog:read  # product_lookup / check_inventory
+      - AuditLog:write
+    events:
+      emit:
+        - ToolCalled
+      subscribe: []
+
+  ResponseAgent:
+    description: "Generates final response with AI disclosure on first contact; respects context budget (ADR-061)"
+    secrets:
+      - global:ANTHROPIC_API_KEY              # fallback
+      - agent:ResponseAgent:llm:ANTHROPIC_API_KEY  # optional per-agent key override
+    tools: []
+    repositories:
+      - Ticket:read
+      - Thread:read
+    events:
+      emit: []
+      subscribe: []
+
+  QualityAgent:
+    description: "Self-evaluates draft response quality score before sending"
+    secrets:
+      - global:ANTHROPIC_API_KEY
+    tools: []
+    repositories:
+      - Ticket:read
+    events:
+      emit: []
+      subscribe: []
+
+  MemoryAgent:
+    description: "Extracts customer facts and generates thread summary post-resolution (ADR-061); schedules distress follow-up (ADR-067)"
+    secrets:
+      - global:ANTHROPIC_API_KEY              # fallback
+      - agent:MemoryAgent:llm:ANTHROPIC_API_KEY  # optional per-agent key override
+    tools: []
+    repositories:
+      - Thread:write
+      - AuditLog:write
+    events:
+      emit: []
+      subscribe: []
+
+  HumanReview:
+    description: "Escalation node — builds EscalationHandoff package and routes to human queue (ADR-065)"
+    secrets: []
+    tools:
+      - escalate_ticket
+    repositories:
+      - Ticket:write
+      - EscalationHandoff:write
+    events:
+      emit:
+        - TicketEscalated
+      subscribe: []
+
+  Finalize:
+    description: "Terminal node — writes final audit record and resolves the ticket"
+    secrets: []
+    tools: []
+    repositories:
+      - Ticket:write
+      - AuditLog:write
+    events:
+      emit:
+        - TicketResolved
+      subscribe: []
+
+# Tools that are humanOnly=true and must never appear in any agent's tool list (ADR-068)
+humanOnlyTools:
+  - refund_order

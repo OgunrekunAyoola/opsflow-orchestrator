@@ -23,3 +23,13 @@ export { deploymentController } from './control/DeploymentController';
 export type { DeploymentController, AgentVersion } from './control/DeploymentController';
 export { ShadowRunner, shadowRunner } from './control/ShadowRunner';
 export type { ShadowRunResult } from './control/ShadowRunner';
+
+// Capability registry (ADR-068 / N-67): the agent capability manifest + startup validation.
+export {
+  loadCapabilities,
+  getAgentCapability,
+  getHumanOnlyTools,
+  _resetCapabilitiesCache,
+} from './capabilities/capabilities';
+export type { AgentCapability, CapabilitiesManifest } from './capabilities/capabilities';
+export { validateCapabilities } from './capabilities/validateCapabilities';
