@@ -68,47 +68,85 @@ describe('DeploymentController', () => {
   });
 
   it('registers a version and writes an audit log', async () => {
-    await deploymentController.registerVersion(TENANT_ID, 'resolution', 'v2', { promptVersionId: 'pv-123', createdBy: 'admin-1' });
-    expect(mockRegister).toHaveBeenCalledWith(TENANT_ID, 'resolution', 'v2', { promptVersionId: 'pv-123', createdBy: 'admin-1' });
-    expect(mockAuditLog).toHaveBeenCalledWith(expect.objectContaining({ action: 'agent_version_registered', actorId: 'admin-1' }));
+    await deploymentController.registerVersion(TENANT_ID, 'resolution', 'v2', {
+      promptVersionId: 'pv-123',
+      createdBy: 'admin-1',
+    });
+    expect(mockRegister).toHaveBeenCalledWith(TENANT_ID, 'resolution', 'v2', {
+      promptVersionId: 'pv-123',
+      createdBy: 'admin-1',
+    });
+    expect(mockAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'agent_version_registered', actorId: 'admin-1' }),
+    );
   });
 
   it('promotes a version and writes an audit log', async () => {
     await deploymentController.promote(TENANT_ID, 'resolution', 'v2', 10, 'admin-1');
     expect(mockPromote).toHaveBeenCalledWith(TENANT_ID, 'resolution', 'v2', 10);
     expect(mockAuditLog).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'agent_version_promoted', actorId: 'admin-1', metadata: expect.objectContaining({ versionId: 'v2', percent: 10 }) }),
+      expect.objectContaining({
+        action: 'agent_version_promoted',
+        actorId: 'admin-1',
+        metadata: expect.objectContaining({ versionId: 'v2', percent: 10 }),
+      }),
     );
   });
 
   it('resolveAgent returns canary when canary exists in registry', async () => {
-    mockResolve.mockResolvedValue({ production: { versionId: 'v1', mode: 'production' }, canary: { versionId: 'v2', mode: 'canary' } });
-    const result = await deploymentController.resolveAgent('resolution', { tenantId: TENANT_ID, ticketId: 'ticket-1' });
+    mockResolve.mockResolvedValue({
+      production: { versionId: 'v1', mode: 'production' },
+      canary: { versionId: 'v2', mode: 'canary' },
+    });
+    const result = await deploymentController.resolveAgent('resolution', {
+      tenantId: TENANT_ID,
+      ticketId: 'ticket-1',
+    });
     expect(result).toEqual({ versionId: 'v2', mode: 'canary' });
   });
 
   it('resolveAgent returns production when no canary exists', async () => {
     mockResolve.mockResolvedValue({ production: { versionId: 'v1', mode: 'production' } });
-    const result = await deploymentController.resolveAgent('resolution', { tenantId: TENANT_ID, ticketId: 'ticket-1' });
+    const result = await deploymentController.resolveAgent('resolution', {
+      tenantId: TENANT_ID,
+      ticketId: 'ticket-1',
+    });
     expect(result).toEqual({ versionId: 'v1', mode: 'production' });
   });
 
   it('rolls back a version and writes an audit log', async () => {
     await deploymentController.rollback(TENANT_ID, 'resolution', 'v2', 'admin-2');
     expect(mockRollback).toHaveBeenCalledWith(TENANT_ID, 'resolution', 'v2');
-    expect(mockAuditLog).toHaveBeenCalledWith(expect.objectContaining({ action: 'agent_version_rollback', actorId: 'admin-2' }));
+    expect(mockAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'agent_version_rollback', actorId: 'admin-2' }),
+    );
   });
 
   it('does not trigger auto-rollback when call count is below window', async () => {
-    mockFindByVersionSystemLevel.mockResolvedValue({ agentId: 'resolution', versionId: 'v2', status: 'canary', tenantId: TENANT_ID });
+    mockFindByVersionSystemLevel.mockResolvedValue({
+      agentId: 'resolution',
+      versionId: 'v2',
+      status: 'canary',
+      tenantId: TENANT_ID,
+    });
     mockRedisGet.mockResolvedValue('5'); // total below ROLLBACK_WINDOW_SIZE (100)
     await deploymentController.recordOutcome('resolution', 'v2', 'error');
     expect(mockRollback).not.toHaveBeenCalled();
   });
 
   it('triggers auto-rollback when canary error rate exceeds 2x production', async () => {
-    mockFindByVersionSystemLevel.mockResolvedValue({ agentId: 'resolution', versionId: 'v2', status: 'canary', tenantId: TENANT_ID });
-    mockFindProduction.mockResolvedValue({ agentId: 'resolution', versionId: 'v1', status: 'production', tenantId: TENANT_ID });
+    mockFindByVersionSystemLevel.mockResolvedValue({
+      agentId: 'resolution',
+      versionId: 'v2',
+      status: 'canary',
+      tenantId: TENANT_ID,
+    });
+    mockFindProduction.mockResolvedValue({
+      agentId: 'resolution',
+      versionId: 'v1',
+      status: 'production',
+      tenantId: TENANT_ID,
+    });
     // canary 60/100 = 60%; production 5/100 = 5% → 60 > 5*2 → rollback
     mockRedisGet
       .mockResolvedValueOnce('100') // canary total

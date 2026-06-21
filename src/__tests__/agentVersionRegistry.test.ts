@@ -76,7 +76,9 @@ describe('AgentVersionRegistry', () => {
 
   describe('resolve', () => {
     it('returns production version when no canary or shadow exists', async () => {
-      mockRepoFind.mockResolvedValue([{ agentId: 'resolution', versionId: 'v1', status: 'production', trafficPercent: 100 }]);
+      mockRepoFind.mockResolvedValue([
+        { agentId: 'resolution', versionId: 'v1', status: 'production', trafficPercent: 100 },
+      ]);
       const result = await registry.resolve('resolution', { tenantId: TENANT_ID, ticketId: 'ticket-1' });
       expect(result.production.versionId).toBe('v1');
       expect(result.production.mode).toBe('production');
@@ -93,7 +95,13 @@ describe('AgentVersionRegistry', () => {
     it('returns shadow version info when shadow exists', async () => {
       mockRepoFind.mockResolvedValue([
         { agentId: 'resolution', versionId: 'v1', status: 'production', trafficPercent: 100 },
-        { agentId: 'resolution', versionId: 'v2', status: 'shadow', trafficPercent: 0, promptVersionId: new mongoose.Types.ObjectId('aaaaaaaaaaaaaaaaaaaaaaaa') },
+        {
+          agentId: 'resolution',
+          versionId: 'v2',
+          status: 'shadow',
+          trafficPercent: 0,
+          promptVersionId: new mongoose.Types.ObjectId('aaaaaaaaaaaaaaaaaaaaaaaa'),
+        },
       ]);
       const result = await registry.resolve('resolution', { tenantId: TENANT_ID, ticketId: 'ticket-1' });
       expect(result.shadow).toBeDefined();
@@ -127,7 +135,9 @@ describe('AgentVersionRegistry', () => {
     });
 
     it('uses Redis cache on second resolve call', async () => {
-      const versions = [{ agentId: 'resolution', versionId: 'v1', status: 'production', trafficPercent: 100 }];
+      const versions = [
+        { agentId: 'resolution', versionId: 'v1', status: 'production', trafficPercent: 100 },
+      ];
       mockRepoFind.mockResolvedValue(versions);
       mockRedis.get.mockResolvedValueOnce(null).mockResolvedValueOnce(JSON.stringify(versions));
       await registry.resolve('resolution', { tenantId: TENANT_ID, ticketId: 'ticket-1' });
@@ -143,7 +153,12 @@ describe('AgentVersionRegistry', () => {
       await registry.register(TENANT_ID, 'resolution', 'v1', { createdBy: 'admin' });
       expect(mockRepoCreate).toHaveBeenCalledWith(
         TENANT_ID,
-        expect.objectContaining({ agentId: 'resolution', versionId: 'v1', status: 'production', trafficPercent: 100 }),
+        expect.objectContaining({
+          agentId: 'resolution',
+          versionId: 'v1',
+          status: 'production',
+          trafficPercent: 100,
+        }),
       );
     });
 

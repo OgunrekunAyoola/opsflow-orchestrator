@@ -3,9 +3,9 @@
  * The host PromptService + ShadowComparison model are injected via setControlDeps.
  */
 import mongoose from 'mongoose';
+import { AsyncLocalStorage } from 'async_hooks';
 import { ShadowRunner, setControlDeps } from '../index';
 
-const { AsyncLocalStorage } = require('async_hooks');
 const shadowStore = new AsyncLocalStorage();
 
 const mockComparisonCreate = jest.fn();
