@@ -10,6 +10,8 @@
  */
 
 export type TurnNode =
+  | 'turn_gate'
+  | 'light_turn'
   | 'thread_classifier'
   | 'memory_read'
   | 'triage'
@@ -17,6 +19,7 @@ export type TurnNode =
   | 'rag'
   | 'router'
   | 'resolution'
+  | 'inform'
   | 'response'
   | 'quality'
   | 'memory_write'
@@ -67,13 +70,23 @@ interface NodeSpec {
  *   escalation | human_review | product_decline | finalize → END
  */
 export const TURN_TOPOLOGY: Record<TurnNode, NodeSpec> = {
+  // thread_classifier runs first (keeps human-only/opt-out routing); the front-door gate sits after
+  // it, then social turns skip the heavy pipeline (CONVERSATION_ENGINE_DESIGN §2/§3).
   thread_classifier: {
     branch: {
       field: 'messageClassification',
       cases: { human_queue_addition: 'END' },
+      default: 'turn_gate',
+    },
+  },
+  turn_gate: {
+    branch: {
+      field: 'turnRole',
+      cases: { greeting: 'light_turn', ack: 'light_turn', closing: 'light_turn' },
       default: 'memory_read',
     },
   },
+  light_turn: { terminal: true },
   memory_read: { to: 'triage' },
   triage: { to: ['enrich', 'rag'] },
   enrich: { joinInto: { node: 'router', waitFor: ['enrich', 'rag'] } },
@@ -81,11 +94,14 @@ export const TURN_TOPOLOGY: Record<TurnNode, NodeSpec> = {
   router: {
     branch: {
       field: 'routingDecision',
-      cases: { escalate: 'escalation', human: 'human_review', decline: 'product_decline' },
+      cases: { escalate: 'escalation', human: 'human_review', decline: 'product_decline', inform: 'inform' },
       default: 'resolution',
     },
   },
   resolution: { to: 'response' },
+  // INFORM flow: answers a relationship/overview question from the business overview, then
+  // feeds the same quality gate as the resolution path (GATED posture).
+  inform: { to: 'quality' },
   response: { to: 'quality' },
   quality: {
     branch: {
