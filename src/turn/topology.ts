@@ -13,6 +13,7 @@ export type TurnNode =
   | 'turn_gate'
   | 'light_turn'
   | 'resume_job'
+  | 'clarify'
   | 'thread_classifier'
   | 'memory_read'
   | 'triage'
@@ -84,12 +85,13 @@ export const TURN_TOPOLOGY: Record<TurnNode, NodeSpec> = {
   turn_gate: {
     branch: {
       field: 'gateRoute',
-      cases: { light: 'light_turn', resume: 'resume_job' },
+      cases: { light: 'light_turn', resume: 'resume_job', clarify: 'clarify' },
       default: 'memory_read',
     },
   },
   light_turn: { terminal: true },
   resume_job: { terminal: true },
+  clarify: { terminal: true },
   memory_read: { to: 'triage' },
   triage: { to: ['enrich', 'rag'] },
   enrich: { joinInto: { node: 'router', waitFor: ['enrich', 'rag'] } },
