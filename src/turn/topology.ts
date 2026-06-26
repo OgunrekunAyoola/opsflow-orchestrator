@@ -21,6 +21,7 @@ export type TurnNode =
   | 'router'
   | 'resolution'
   | 'inform'
+  | 'open_job'
   | 'response'
   | 'quality'
   | 'memory_write'
@@ -96,7 +97,13 @@ export const TURN_TOPOLOGY: Record<TurnNode, NodeSpec> = {
   router: {
     branch: {
       field: 'routingDecision',
-      cases: { escalate: 'escalation', human: 'human_review', decline: 'product_decline', inform: 'inform' },
+      cases: {
+        escalate: 'escalation',
+        human: 'human_review',
+        decline: 'product_decline',
+        inform: 'inform',
+        open_job: 'open_job',
+      },
       default: 'resolution',
     },
   },
@@ -104,6 +111,8 @@ export const TURN_TOPOLOGY: Record<TurnNode, NodeSpec> = {
   // INFORM flow: answers a relationship/overview question from the business overview, then
   // feeds the same quality gate as the resolution path (GATED posture).
   inform: { to: 'quality' },
+  // OPEN a stateful Job (e.g. order) from a purchase turn → asks the first slot, terminal.
+  open_job: { terminal: true },
   response: { to: 'quality' },
   quality: {
     branch: {
