@@ -86,8 +86,13 @@ export async function runConversationTurn<TInput>(
     // 2. DISPATCH — the LLM driver reasons + acts (tools run inside it, audited by the host).
     const driver = await deps.runDriver(input, ctx);
     audit.push({ step: 'driver', detail: driver.exit });
-    if (driver.exit === 'need_human' || driver.exit === 'failed') {
-      return { decision: 'escalate', reason: `driver:${driver.exit}:${driver.reason ?? ''}`, audit };
+    if (driver.exit === 'failed') {
+      return { decision: 'escalate', reason: `driver:failed:${driver.reason ?? ''}`, audit };
+    }
+    if (driver.exit === 'need_human') {
+      // Carry the driver's warm holding reply through to the customer, THEN route to a human
+      // (e.g. distress: "I hear you — getting someone to help you right now" + escalate).
+      return { decision: 'escalate', reply: driver.reply, reason: `driver:need_human:${driver.reason ?? ''}`, audit };
     }
     if (driver.exit === 'need_clarify') {
       // Stay in-flow: ask one question; no quality gate on a clarifying question.
