@@ -41,3 +41,15 @@ export { TURN_TOPOLOGY, resolveNext } from './turn/topology';
 export type { TurnNode, TurnState, NextResolution } from './turn/topology';
 export { TurnOwner, turnOwner } from './turn/TurnOwner';
 export type { EnvelopeValidation, TurnDecision, TurnContext } from './turn/TurnOwner';
+
+// Conversation control loop (CONVERSATION_DRIVER_ARCHITECTURE §2) — the orchestrator conducts each
+// turn (fence → driver → output gate); the driver is dispatched, host-injected muscle.
+export { runConversationTurn } from './conversation/ConversationManager';
+export type {
+  ConversationDeps,
+  ConversationContext,
+  ConversationTurnResult,
+  ConversationDecision,
+  DriverResult,
+  FenceOutcome,
+} from './conversation/ConversationManager';
