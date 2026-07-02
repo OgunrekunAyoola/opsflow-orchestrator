@@ -64,7 +64,8 @@ interface NodeSpec {
  * The topology. Mirrors AgentGraph.ts edges 1:1 (a drift-guard test enforces it):
  *
  *   START → thread_classifier
- *   thread_classifier → (human_queue_addition ? END : memory_read)
+ *   thread_classifier → (human_queue_addition ? END : turn_gate)
+ *   turn_gate → (light ? light_turn | resume ? resume_job | clarify ? clarify | else memory_read)
  *   memory_read → triage → [enrich ∥ rag] → (join) router
  *   router → escalate?escalation | human?human_review | decline?product_decline | else resolution
  *   resolution → response → quality

@@ -36,6 +36,11 @@ export interface ConversationTurnResult {
   reason: string;
   /** Ordered step log for AuditLog + LangSmith correlation (ADR-032/079). */
   audit: { step: string; detail?: string }[];
+  /**
+   * The driver's opaque trajectory (tool calls, citations), passed straight through so the host can
+   * persist it (grounding sources, cited facts). Absent on a fence pre-empt (the driver never ran).
+   */
+  trace?: unknown;
 }
 
 export interface ConversationContext {
@@ -87,22 +92,39 @@ export async function runConversationTurn<TInput>(
     const driver = await deps.runDriver(input, ctx);
     audit.push({ step: 'driver', detail: driver.exit });
     if (driver.exit === 'failed') {
-      return { decision: 'escalate', reason: `driver:failed:${driver.reason ?? ''}`, audit };
+      return {
+        decision: 'escalate',
+        reason: `driver:failed:${driver.reason ?? ''}`,
+        audit,
+        trace: driver.trace,
+      };
     }
     if (driver.exit === 'need_human') {
       // Carry the driver's warm holding reply through to the customer, THEN route to a human
       // (e.g. distress: "I hear you — getting someone to help you right now" + escalate).
-      return { decision: 'escalate', reply: driver.reply, reason: `driver:need_human:${driver.reason ?? ''}`, audit };
+      return {
+        decision: 'escalate',
+        reply: driver.reply,
+        reason: `driver:need_human:${driver.reason ?? ''}`,
+        audit,
+        trace: driver.trace,
+      };
     }
     if (driver.exit === 'need_clarify') {
       // Stay in-flow: ask one question; no quality gate on a clarifying question.
-      return { decision: 'clarify', reply: driver.reply, reason: 'driver:need_clarify', audit };
+      return {
+        decision: 'clarify',
+        reply: driver.reply,
+        reason: 'driver:need_clarify',
+        audit,
+        trace: driver.trace,
+      };
     }
 
     // 3. OUTPUT GATE — quality + posture decide whether the answer reaches the customer.
     const gate = await deps.runOutputGate(driver, input, ctx);
     audit.push({ step: 'gate', detail: gate.decision });
-    return { decision: gate.decision, reply: driver.reply, reason: gate.reason, audit };
+    return { decision: gate.decision, reply: driver.reply, reason: gate.reason, audit, trace: driver.trace };
   } catch (err) {
     // Fail-closed + must-be-visible: never a silent hang on a control-loop fault.
     const message = err instanceof Error ? err.message : String(err);

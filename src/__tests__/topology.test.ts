@@ -6,16 +6,18 @@
 import { resolveNext, TURN_TOPOLOGY, type TurnState } from '../turn/topology';
 
 describe('turn topology — resolveNext', () => {
-  it('thread_classifier routes a human-queue addition to END, else memory_read', () => {
+  it('thread_classifier routes a human-queue addition to END, else the turn_gate front door', () => {
     expect(resolveNext('thread_classifier', { messageClassification: 'human_queue_addition' })).toEqual({
       kind: 'end',
     });
+    // the front-door gate (turn_gate) sits after thread_classifier; social/resume/clarify turns branch
+    // there and only the heavy path falls through to memory_read.
     expect(resolveNext('thread_classifier', { messageClassification: 'new_thread' })).toEqual({
       kind: 'single',
-      node: 'memory_read',
+      node: 'turn_gate',
     });
-    // absent classification → default memory_read
-    expect(resolveNext('thread_classifier', {})).toEqual({ kind: 'single', node: 'memory_read' });
+    // absent classification → default turn_gate
+    expect(resolveNext('thread_classifier', {})).toEqual({ kind: 'single', node: 'turn_gate' });
   });
 
   it('memory_read → triage, then triage fans out to enrich ∥ rag', () => {
