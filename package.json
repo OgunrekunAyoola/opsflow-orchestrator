@@ -44,5 +44,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/OgunrekunAyoola/opsflow-orchestrator.git"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }
