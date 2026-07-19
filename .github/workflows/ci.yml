@@ -49,7 +49,7 @@ jobs:
           repository: OgunrekunAyoola/opsflow-platform
           path: opsflow-platform
           token: ${{ secrets.CI_REPO_TOKEN }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
       - name: Build dependency — @opsflow/contracts
